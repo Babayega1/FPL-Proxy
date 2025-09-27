@@ -10,21 +10,11 @@ session = requests.Session()
 session.headers.update({"User-Agent": "FPL-Proxy/1.0"})
 
 # -------------------------------
-# BOOTSTRAP FILTERS (small chunks)
+# TEAMS
 # -------------------------------
-@app.get("/fpl/players")
-def get_players():
-    """Return only player (elements) data."""
-    try:
-        r = session.get(f"{FPL_BASE}/bootstrap-static/", timeout=TIMEOUT)
-        r.raise_for_status()
-        return r.json()["elements"]
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Error fetching players: {e}")
-
 @app.get("/fpl/teams")
 def get_teams():
-    """Return only team data."""
+    """Return all team data."""
     try:
         r = session.get(f"{FPL_BASE}/bootstrap-static/", timeout=TIMEOUT)
         r.raise_for_status()
@@ -32,9 +22,12 @@ def get_teams():
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Error fetching teams: {e}")
 
+# -------------------------------
+# EVENTS (gameweeks)
+# -------------------------------
 @app.get("/fpl/events")
 def get_events():
-    """Return only event (gameweek) data."""
+    """Return all gameweek (event) data."""
     try:
         r = session.get(f"{FPL_BASE}/bootstrap-static/", timeout=TIMEOUT)
         r.raise_for_status()
@@ -43,12 +36,55 @@ def get_events():
         raise HTTPException(status_code=502, detail=f"Error fetching events: {e}")
 
 # -------------------------------
-# FIXTURES: next 3 gameweeks only
+# PLAYERS BY POSITION
+# -------------------------------
+@app.get("/fpl/players/goalkeepers")
+def get_goalkeepers():
+    """Return all goalkeepers."""
+    try:
+        r = session.get(f"{FPL_BASE}/bootstrap-static/", timeout=TIMEOUT)
+        r.raise_for_status()
+        return [p for p in r.json()["elements"] if p["element_type"] == 1]
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Error fetching goalkeepers: {e}")
+
+@app.get("/fpl/players/defenders")
+def get_defenders():
+    """Return all defenders."""
+    try:
+        r = session.get(f"{FPL_BASE}/bootstrap-static/", timeout=TIMEOUT)
+        r.raise_for_status()
+        return [p for p in r.json()["elements"] if p["element_type"] == 2]
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Error fetching defenders: {e}")
+
+@app.get("/fpl/players/midfielders")
+def get_midfielders():
+    """Return all midfielders."""
+    try:
+        r = session.get(f"{FPL_BASE}/bootstrap-static/", timeout=TIMEOUT)
+        r.raise_for_status()
+        return [p for p in r.json()["elements"] if p["element_type"] == 3]
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Error fetching midfielders: {e}")
+
+@app.get("/fpl/players/forwards")
+def get_forwards():
+    """Return all forwards."""
+    try:
+        r = session.get(f"{FPL_BASE}/bootstrap-static/", timeout=TIMEOUT)
+        r.raise_for_status()
+        return [p for p in r.json()["elements"] if p["element_type"] == 4]
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Error fetching forwards: {e}")
+
+# -------------------------------
+# FIXTURES (next 3 gameweeks only)
 # -------------------------------
 @app.get("/fpl/fixtures/upcoming/{gw}")
 def get_upcoming_fixtures(gw: int):
     """
-    Return fixtures for the next 3 gameweeks starting from `gw`.
+    Return fixtures for the next 3 gameweeks starting from gw.
     Example: /fpl/fixtures/upcoming/8 -> GW8, GW9, GW10
     """
     try:
@@ -60,7 +96,7 @@ def get_upcoming_fixtures(gw: int):
         raise HTTPException(status_code=502, detail=f"Error fetching fixtures: {e}")
 
 # -------------------------------
-# LIVE EVENT DATA (per gameweek)
+# LIVE EVENT DATA
 # -------------------------------
 @app.get("/fpl/event/{gw}/live")
 def get_live(gw: int):
@@ -70,4 +106,4 @@ def get_live(gw: int):
         r.raise_for_status()
         return r.json()
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Error fetching live event: {e}")
+        raise HTTPException(status_code=502, detail=f"Error fetching live data: {e}")
